@@ -1,0 +1,258 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Поток · Заявки на оплату</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#202d40;font:15px "Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #3186ed}header{background:#18283c;color:white;height:64px;display:flex;align-items:center;padding:0 4vw;gap:15px}header b{font-size:21px;letter-spacing:1px}header small{border-left:1px solid #516174;padding-left:15px;color:#c1ccda}.logo{padding:6px 9px;border-radius:9px;background:#327fe6;font-weight:800}.avatar{margin-left:auto;background:#d5e6ff;color:#234978;border-radius:50%;padding:9px;font-weight:600}main{padding:32px 4vw}h1{font-size:clamp(28px,4vw,40px);letter-spacing:-1.5px;margin:0}h2{margin:0;font-size:21px}.row,.tools,.colhead{display:flex;align-items:center;gap:12px}.row{justify-content:space-between;flex-wrap:wrap}.primary,dialog button{border:0;border-radius:8px;padding:11px 15px;font-weight:600}.primary{background:#216aca;color:white}.tools{margin:22px 0;flex-wrap:wrap}.tools input{width:min(350px,100%)}input,select{border:1px solid #cad3df;border-radius:7px;background:white;padding:10px;width:100%}.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.column{background:#e9edf3;border-radius:10px;padding:12px;min-height:50vh;border-top:4px solid var(--c)}.colhead{justify-content:space-between;font-weight:700}.count{background:white;padding:1px 8px;border-radius:20px}.total,.muted{color:#53677e;font-size:13px}.total{margin:5px 0 15px}.card{width:100%;text-align:left;background:white;border:1px solid #d9e0e8;border-radius:8px;margin-bottom:9px;padding:15px;box-shadow:0 2px 4px #1b315608}.card:hover{border-color:#87adcf}.card strong,.card b,.card span{display:block}.card strong{margin:8px 0 3px}.card b{margin-top:15px;font-size:19px}.card small{color:#617589}.card em{font-style:normal;background:#edf2f9;border-radius:4px;padding:2px 6px;color:#485c75}.foot{margin-top:20px;color:#64758a;font-size:13px}dialog{border:0;border-radius:14px;padding:24px;width:min(450px,94vw);color:inherit;max-height:90dvh}dialog::backdrop{background:#18283c80}dialog label{display:block;margin:14px 0}dialog label input,dialog select{margin-top:6px}dialog .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}dialog .close{background:transparent;font-size:22px;padding:2px 8px}dialog p{overflow-wrap:anywhere}.sum{font-weight:700;font-size:26px}.empty{font-size:13px;color:#67788c}.mobile{display:none}@media(max-width:700px){main{padding:20px 14px}header{height:54px}.mobile{display:block}.board{display:block}.column{min-height:220px}.column:not(.active){display:none}.tools{gap:8px;margin:16px 0}.tools input{width:100%}.row>.primary{padding:9px 10px}.card{padding:13px}.colhead{font-size:17px}}
+@media(min-width:701px){.card[draggable=true]{cursor:grab}.column.destination{outline:2px dashed #216aca;outline-offset:-2px;background:#dfebfa}}.owner{margin:0 0 12px;color:#45586f;font-size:13px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:20px}.metric{background:white;border:1px solid #dae2eb;border-radius:8px;padding:12px}.metric strong{display:block;margin-top:4px;font-size:clamp(15px,2vw,22px)}.history li{margin:8px 0}.card .due{margin-top:8px;display:block}@media(max-width:700px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#planning{margin:16px 0;background:white;border:1px solid #cad3df;border-radius:8px;padding:14px}#planning summary{font-weight:650;cursor:pointer}#planContent label{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #e2e8f0}#planContent input{width:20px;height:20px}#planContent small{display:block;color:#53677e}#planContent output{display:block;padding:12px;background:#eff5ff;border-radius:6px}
+[hidden]{display:none!important}.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}.filters label{font-size:13px}.scroll{overflow:auto}table{width:100%;background:white;border-collapse:collapse;margin:14px 0}th,td{text-align:left;padding:10px;border-bottom:1px solid #dae2eb}td button{background:transparent;border:0;color:#216aca}main[aria-busy=true]{pointer-events:none;opacity:.7}</style>
+<header><span class="logo">↗</span><b>Поток</b><small>DDS Service</small><span class="avatar">ДМ</span></header><main><div class="row"><h1>Заявки на оплату</h1><button class="primary" id="add">+ Новая заявка</button></div><section class="summary" id="summary" aria-label="Демонстрационная сводка"></section><details id="planning"><summary>Выбор платежей при нехватке денег · демопример</summary><div id="planContent"></div></details><div class="tools"><input id="search" type="search" aria-label="Поиск заявок" placeholder="Поиск по получателю, назначению, номеру…"><select class="mobile" id="stage" aria-label="Этап согласования"></select></div><div class="tools"><button class="primary" id="switchView">Реестр</button></div><section id="registry" hidden><div class="filters"><label>Статус<select id="filterStatus"></select></label><label>Подразделение<select id="filterDept"></select></label><label>Срок с<input type="date" id="fromDate"></label><label>Срок по<input type="date" id="toDate"></label><label>Сумма от, ₽<input type="number" min="0" step=".01" id="minSum"></label><label>Сумма до, ₽<input type="number" min="0" step=".01" id="maxSum"></label></div><div class="scroll"><table><thead><tr><th>Заявка</th><th>Получатель</th><th>Подразделение</th><th>Срок</th><th>Статус</th><th>Сумма</th></tr></thead><tbody id="registerBody"></tbody></table></div></section><div class="board" id="board"></div><p class="foot">Демо · Вымышленные платежи · Демо · данные сохраняются только в этом браузере</p></main><dialog id="dlg"><div class="row"><h2 id="title"></h2><button class="close" aria-label="Закрыть" onclick="dlg.close()">×</button></div><div id="body"></div></dialog>
+<script>
+const names=['На согласовании','К оплате','Оплачено','Отклонено'],colors=['#6299dd','#e9b254','#52ad96','#c37d85'],key='dds-demo-board-v1';
+const seeds=[['Бюро «Линия»','Дизайн каталога',4850000,0],['Северная типография','Печать буклетов',2675040,0],['Студия «Кадр»','Съёмка продукции',7200000,0],['Мастерская «Форма»','Изготовление стенда',5000000,1],['Служба «Маршрут»','Доставка образцов',890000,1],['Ателье «Контур»','Пошив чехлов',1860000,2]];
+let data=[];
+const payments=seeds.map(([who,,n],i)=>({who,n,ref:'СЧ-'+(41+i),bank:'Б-'+(701+i)}));
+const money=n=>String(Math.floor(n/100)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+','+String(n%100).padStart(2,'0')+' ₽';
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Two outgoing demo statement lines for the stand invoice (request 104).
+const standPayments = [
+  {bank:'ДБ-104-А', amount:2000000},
+  {bank:'ДБ-104-Б', amount:3000000}
+];
+function paidPart(x) {
+  return (x.parts || []).reduce((total, id) => total + standPayments.find(p => p.bank === id).amount, 0);
+}
+function partialCard(x) {
+  const paid = paidPart(x);
+  const due = x.n - paid;
+  const next = standPayments.find(p => !(x.parts || []).includes(p.bank));
+  openCard('Заявка № '+x.id, '<h2>'+esc(x.why)+'</h2><p>'+esc(x.who)+' · '+esc(x.ref)+'</p>'+
+    '<output>'+(!due?'Оплачено':paid?'Частично оплачено':'К оплате')+'</output>'+
+    '<p>Сумма заявки: '+money(x.n)+'<br>Подтверждено: '+money(paid)+'<br><strong>Осталось оплатить: '+money(due)+'</strong></p>'+
+    historyView(x)+(next?'<h3>Демо-сверка</h3><p>'+next.bank+' · '+esc(x.who)+' · '+esc(x.ref)+' · '+money(next.amount)+'</p><button class="primary" id="matchPart">Подтвердить '+money(next.amount)+'</button>':''));
+  if(next) document.getElementById('matchPart').onclick = () => mutate('/api/requests/'+x.id+'/pay?bank='+encodeURIComponent(next.bank),null,x.id);
+}
+function renderSummary() {
+  const totals = [0, 0, 0];
+  for (const x of data) if (x.s < 3) {
+    const part = x.s === 1 ? paidPart(x) : 0;
+    totals[x.s] += x.n - part;
+    totals[2] += part;
+  }
+  const demoBalance = 31800000; // Sample statement balance, in kopecks.
+  summary.innerHTML = [['Остаток по демовыписке', demoBalance], ...totals.map((n,i) => [names[i], n])]
+    .map(([label,n]) => '<div class="metric"><span class="muted">'+label+'</span><strong>'+money(n)+'</strong></div>').join('');
+}
+function dueLabel(x) {
+  return x.due ? 'Срок оплаты · '+esc(x.due.split('-').reverse().join('.')) : 'Срок не указан';
+}
+function record(x, action, role) {
+  (x.history ??= []).push({action, role, at:new Date().toISOString()});
+}
+function historyView(x) {
+  const rows = (x.history || []).map(e => '<li>'+esc(e.action)+'<br><small>'+esc(e.role)+' · '+esc(new Date(e.at).toLocaleString('ru-RU'))+'</small></li>');
+  return '<h3>История действий</h3>'+(rows.length ? '<ol class="history">'+rows.join('')+'</ol>' : '<p class="muted">Записей пока нет.</p>');
+}
+function render(){renderSummary();renderRegistry();const stages=names.map((_,i)=>i).filter(i=>i<3||data.some(x=>x.s===3));stage.innerHTML=stages.map(i=>'<option value="'+i+'">'+names[i]+'</option>').join('');stage.value=String(active);board.innerHTML=stages.map(i=>{const a=data.filter(x=>x.s===i&&[x.who,x.why,x.id,x.ref].join(' ').toLowerCase().includes(search.value.trim().toLowerCase()));return '<section data-stage="'+i+'" class="column '+(i===active?'active':'')+'" style="--c:'+colors[i]+'"><div class="colhead">'+names[i]+'<span class="count">'+a.length+'</span></div><div class="total">'+money(a.reduce((s,x)=>s+x.n-(x.s===1?paidPart(x):0),0))+'</div><p class="owner">'+['Решение руководителя','Оплата и сверка','Сверено с выпиской','Решение принято'][i]+'</p>'+a.map(x=>'<button class="card" data-id="'+x.id+'" draggable="'+(x.s<2)+'" onclick="detail('+x.id+')"><small>№ '+x.id+' · <em>'+esc(x.ref)+'</em></small><strong>'+esc(x.who)+'</strong><span class="muted">'+esc(x.why)+'</span>'+(x.s===1&&paidPart(x)?'<small>Частично оплачено · осталось '+money(x.n-paidPart(x))+'</small>':'')+'<b>'+money(x.n)+'</b><small class="due">'+dueLabel(x)+'</small></button>').join('')+(a.length?'':'<p class="empty">Нет заявок</p>')+'</section>'}).join('')}
+let active=0;stage.onchange=()=>{active=Number(stage.value);render()};search.oninput=render;
+let dragged = null;
+function clearDrag() {
+  board.querySelector('.destination')?.classList.remove('destination');
+  dragged = null;
+}
+board.addEventListener('dragstart', event => {
+  const card = event.target.closest('.card[draggable="true"]');
+  if (!card || !matchMedia('(min-width:701px)').matches) {
+    event.preventDefault();
+    return;
+  }
+  dragged = data.find(x => x.id === Number(card.dataset.id));
+  board.querySelector('[data-stage="' + (dragged.s + 1) + '"]').classList.add('destination');
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(dragged.id));
+});
+function validDrop(event) {
+  const column = event.target.closest('[data-stage]');
+  return dragged && column && Number(column.dataset.stage) === dragged.s + 1;
+}
+board.addEventListener('dragover', event => {
+  if (validDrop(event)) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+});
+board.addEventListener('drop', event => {
+  if (!validDrop(event)) return;
+  event.preventDefault();
+  const id = dragged.id;
+  clearDrag();
+  detail(id);
+});
+board.addEventListener('dragend', clearDrag);
+const demoKey='dds-public-demo-v1';
+const departments=['Маркетинг','Маркетинг','Маркетинг','Производство','Логистика','Производство'];
+let demo=JSON.parse(localStorage.getItem(demoKey)||'null') || {
+  requests:seeds.map(([who,why,n,s],i)=>({id:101+i,who,why,n,s,ref:'СЧ-'+(41+i),due:'2026-11-'+[20,23,25,19,21,18][i],department:departments[i],parts:[],paid:s===2?n:0,bank:s===2?'Б-706':'',history:[]})),
+  transfer:null,version:0
+};
+function storeDemo(){localStorage.setItem(demoKey,JSON.stringify(demo))}
+async function api(url,method='GET',value){
+  if(url==='/api/bootstrap') return null;
+  if(url==='/api/state') return structuredClone(demo);
+  if(url==='/api/requests'){
+    const id=Math.max(100,...demo.requests.map(x=>x.id))+1;
+    demo.requests.unshift({...value,id,s:0,parts:[],paid:0,bank:'',history:[{action:'Отправлена на согласование',role:'Сотрудник (демо)',at:new Date().toISOString()}]});
+    storeDemo();return {id};
+  }
+  if(url.startsWith('/api/scenario/')){demo.transfer=structuredClone(value);demo.version++;storeDemo();return demo.version}
+  const match=url.match(/^\/api\/requests\/(\d+)\/(approve|reject|pay)(?:\?bank=(.*))?$/);
+  if(!match)throw Error('Неизвестное действие');
+  const x=demo.requests.find(x=>x.id===Number(match[1]));
+  if(!x)throw Error('Заявка не найдена');
+  let action,role;
+  if(match[2]==='pay'){
+    const bank=decodeURIComponent(match[3]||'');
+    const amount=x.id===104?standPayments.find(p=>p.bank===bank)?.amount:x.n;
+    if(x.s!==1||!amount||x.parts.includes(bank)||x.paid+amount>x.n)throw Error('Операция уже учтена или не подходит');
+    if(x.id===104)x.parts.push(bank);
+    x.paid+=amount;x.bank=bank;if(x.paid===x.n)x.s=2;
+    action='Подтверждено '+money(amount)+' по операции '+bank;role='Финансист (демо)';
+  } else {
+    if(x.s!==0)throw Error('Статус уже изменён');
+    x.s=match[2]==='approve'?1:3;
+    action=x.s===1?'Заявка одобрена':'Заявка отклонена';role='Руководитель (демо)';
+  }
+  x.history.push({action,role,at:new Date().toISOString()});storeDemo();return null;
+}
+let version=0;
+async function refresh(){
+  const state=await api('/api/state');
+  data=state.requests;version=state.version;
+  Object.assign(transfer,state.transfer||{phase:'initial',day:'2026-11-19',selected:false,events:[]});
+  reviewingTransfer=transfer.phase!=='initial';
+  render();showPlan();
+}
+async function mutate(url,payload,reopen){
+  try {
+    await api(url,'POST',payload);await refresh();dlg.close();
+    if(reopen) detail(reopen);
+  } catch(e){alert('Не удалось сохранить: '+e.message);await refresh();dlg.close()}
+}
+const partialStatus='Частично оплачено';
+const statusOf=x=>x.s===1&&x.paid?partialStatus:names[x.s];
+function cents(input){
+  const [whole,frac='']=input.value.split('.');
+  return Number(whole)*100+Number(frac.padEnd(2,'0'));
+}
+function visibleRows(){
+  const query=search.value.trim().toLowerCase();
+  return data.filter(x=>[x.id,x.who,x.why,x.ref].join(' ').toLowerCase().includes(query)
+    && (!filterStatus.value||statusOf(x)===filterStatus.value)
+    && (!filterDept.value||x.department===filterDept.value)
+    && (!fromDate.value||(x.due&&x.due>=fromDate.value)) && (!toDate.value||(x.due&&x.due<=toDate.value))
+    && (!minSum.value||x.n>=cents(minSum)) && (!maxSum.value||x.n<=cents(maxSum)));
+}
+function renderRegistry(){
+  const dept=filterDept.value;
+  filterDept.innerHTML='<option value="">Все</option>'+[...new Set(data.map(x=>x.department))].sort().map(d=>'<option>'+esc(d)+'</option>').join('');
+  filterDept.value=dept;
+  registerBody.innerHTML=visibleRows().map(x=>'<tr><td><button onclick="detail('+x.id+')">№ '+x.id+' · '+esc(x.why)+'</button></td>'+[x.who,x.department,x.due||'—',statusOf(x),money(x.n)].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="6">Заявок не найдено</td></tr>';
+}
+filterStatus.innerHTML='<option value="">Все</option>'+[...names,partialStatus].map(v=>'<option>'+v+'</option>').join('');
+registry.oninput=renderRegistry;
+switchView.onclick=()=>{registry.hidden=!registry.hidden;board.hidden=!registry.hidden;switchView.textContent=registry.hidden?'Реестр':'Канбан';renderRegistry()};
+function openCard(t,h){title.textContent=t;body.innerHTML=h;if(!dlg.open)dlg.showModal()}
+function detail(id){const x=data.find(a=>a.id===id),p=payments.find(p=>p.ref===x.ref&&p.who===x.who&&p.n===x.n&&!data.some(a=>a.bank===p.bank));if(x.id===104 && x.n===5000000 && (x.s===1 || x.parts?.length)) return partialCard(x);openCard('Заявка № '+id,'<p class="muted">'+names[x.s]+' · '+esc(x.ref)+'</p><h2>'+esc(x.who)+'</h2><p>'+esc(x.why)+'</p><p class="sum">'+money(x.n)+'</p>'+(x.bank?'<p>Операция выписки: '+esc(x.bank)+'</p>':'')+(x.s===1?(p?'<p>Совпадение в демовыписке: '+p.bank+' · '+esc(p.who)+' · '+money(p.n)+' · '+esc(p.ref)+'</p>':'<p>Совпадений в демовыписке нет.</p>'):'')+ '<p>'+dueLabel(x)+'</p>'+historyView(x)+'<div class="actions">'+(x.s===0?'<button id="approve" class="primary">Одобрить</button><button id="reject">Отклонить</button>':x.s===1&&p?'<button id="linkPay" class="primary">Подтвердить оплату</button>':'')+'</div>');if(x.s===0){approve.onclick=()=>mutate('/api/requests/'+id+'/approve');reject.onclick=()=>mutate('/api/requests/'+id+'/reject')}
+if(x.s===1&&p)linkPay.onclick=()=>mutate('/api/requests/'+id+'/pay?bank='+encodeURIComponent(p.bank))}
+add.onclick=()=>{openCard('Новая заявка','<form id="form"><label>Получатель<input name="who" required maxlength="90"></label><label>Номер счёта<input name="ref" required maxlength="40"></label><label>Подразделение<input name="department" maxlength="90" required></label><label>Назначение<input name="why" required maxlength="140"></label><label>Срок оплаты<input type="date" name="due" required></label><label>Сумма, ₽<input name="amount" inputmode="decimal" required pattern="[0-9]{1,9}([,.][0-9]{1,2})?" placeholder="50 000,00"></label><button class="primary">На согласование</button></form>');form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),[r,k='']=f.get('amount').split(/[,.]/),n=Number(r)*100+Number(k.padEnd(2,'0'));if(!n){alert('Введите положительную сумму');return}const request={due:f.get('due'),who:f.get('who').trim(),why:f.get('why').trim(),ref:f.get('ref').trim(),department:f.get('department').trim(),n};active=0;search.value='';mutate('/api/requests',request)}};
+// Isolated planning example. Selecting a payment has no effect on bank facts.
+const scenarioFunds = 10000000;
+const scenarioBills = [
+  {name:'Аренда офиса', amount:7000000, due:'19 ноября'},
+  {name:'Доставка заказов', amount:2500000, due:'19 ноября'},
+  {name:'Печать каталога', amount:4500000, due:'24 ноября'}
+];
+const chosen = new Set([0,1]);
+const transferKey = 'dds-demo-printing-transfer-v1';
+const transfer =
+  {phase:'initial', day:'2026-11-19', selected:false, events:[]};
+let reviewingTransfer = transfer.phase !== 'initial';
+const resumeOn = '2026-11-24';
+const printingOperation = {id:'ДБ-2411', recipient:'Типография «Лист»', invoice:'П-24', amount:4500000};
+async function persistTransfer() {
+  const main=document.querySelector('main');
+  main.inert=true;
+  try{version=await api('/api/scenario/'+version,'PUT',transfer)}
+  catch(e){alert('Не удалось сохранить сценарий: '+e.message);await refresh()}
+  finally{main.inert=false}
+}
+function transferEvent(phase, role, message) {
+  transfer.phase = phase;
+  transfer.events.push({day:transfer.day,role,message});
+  persistTransfer();
+  showTransfer();
+}
+function showTransfer() {
+  const ready = transfer.day >= resumeOn;
+  const pending = transfer.phase === 'deferred';
+  const approved = transfer.phase === 'approved';
+  const paid = transfer.phase === 'paid';
+  const bill = scenarioBills[2];
+  const status = paid ? 'Оплачено · '+printingOperation.id : approved ? 'Список утверждён · ожидает сверки' :
+    !ready ? 'Отложена до 24 ноября' : transfer.selected ? 'В новом списке · '+money(bill.amount) : 'Доступна для включения · Согласована';
+  planContent.innerHTML = '<h3>Печать каталога · '+money(bill.amount)+'</h3><p>Типография «Лист» · счёт П-24</p>'+
+    (pending ? '<label>Дата просмотра <select id="reviewDate"><option value="2026-11-19">19 ноября</option><option value="2026-11-23">23 ноября</option><option value="2026-11-24">24 ноября</option></select></label>'+
+    '<label><input id="pickTransfer" type="checkbox" '+(!ready?'disabled':transfer.selected?'checked':'')+'>Включить в новый список</label>' : '')+
+    '<output aria-live="polite">'+status+'</output>'+
+    (ready ? '<p>24 ноября в демовыписке: остаток 5 000 ₽ + поступление 40 000 ₽ = 45 000 ₽ перед оплатой.</p>' : '')+
+    (pending && ready && transfer.selected ? '<button class="primary" id="approveList">Утвердить список на 45 000 ₽</button>' : '')+
+    (approved || paid ? '<h4>Демо-сверка</h4><p>24 ноября · '+printingOperation.id+' · списание '+money(printingOperation.amount)+' · '+printingOperation.recipient+' · счёт '+printingOperation.invoice+'</p>' : '')+
+    (approved ? '<button class="primary" id="confirmStatement">Подтвердить совпадение</button>' : '')+
+    '<h4>История заявки</h4><ol>'+transfer.events.map(e=>'<li>'+esc(e.day.split('-').reverse().join('.'))+' · '+esc(e.role)+' · '+esc(e.message)+'</li>').join('')+'</ol>';
+  if(pending) reviewDate.value = transfer.day;
+}
+function showPlan() {
+  if (reviewingTransfer) { showTransfer(); return; }
+  const picked = scenarioBills.filter((_,i)=>chosen.has(i));
+  const later = scenarioBills.filter((_,i)=>!chosen.has(i));
+  const total = picked.reduce((sum,b)=>sum+b.amount,0);
+  const balance = scenarioFunds-total;
+  planContent.innerHTML = '<p>В этом примере доступно <b>'+money(scenarioFunds)+'</b>. Согласовано на 140 000,00 ₽. Дефицит — 40 000,00 ₽.</p><p>Отметьте, что оплатить сейчас. Остальные заявки перейдут в план на потом.</p>'+
+    scenarioBills.map((b,i)=>'<label><input type="checkbox" data-bill="'+i+'" '+(chosen.has(i)?'checked':'')+'><span>'+b.name+' · '+money(b.amount)+'<small>Срок оплаты — '+b.due+'</small></span></label>').join('')+
+    '<output aria-live="polite">К оплате сейчас: <b>'+money(total)+'</b><br>'+(balance<0?'Не хватает: '+money(-balance)+'. Снимите часть отметок.':'Останется: '+money(balance))+'<br>Перенести: '+(later.map(b=>b.name).join(', ')||'ничего')+'</output>'+(chosen.has(0)&&chosen.has(1)&&!chosen.has(2)?'<p><button class="primary" id="deferPrinting">Перенести печать на 24 ноября</button></p>':'');
+}
+planContent.addEventListener('click', event => {
+  if(event.target.id==='deferPrinting'){
+    reviewingTransfer=true;
+    transferEvent('deferred','Финансист','Перенос на 24 ноября: после аренды и доставки осталось 5 000 ₽. Для оплаты печати не хватает 40 000 ₽.');
+  }
+  if(event.target.id==='approveList' && transfer.phase==='deferred' && transfer.selected && transfer.day>=resumeOn)
+    transferEvent('approved','Руководитель','Утверждён список: печать каталога, 45 000 ₽.');
+  if(event.target.id==='confirmStatement' && transfer.phase==='approved')
+    transferEvent('paid','Финансист','Оплата подтверждена по демооперации '+printingOperation.id+'.');
+});
+planContent.onchange = event => {
+  if (reviewingTransfer) {
+    if(event.target.id==='reviewDate') transfer.day=event.target.value;
+    if(event.target.id==='pickTransfer') transfer.selected=event.target.checked;
+    persistTransfer();
+    const focusId=event.target.id;
+    showTransfer();
+    document.getElementById(focusId)?.focus();
+    return;
+  }
+  const index = Number(event.target.dataset.bill);
+  if (event.target.checked) chosen.add(index);
+  else chosen.delete(index);
+  showPlan();
+  planContent.querySelector('[data-bill="'+index+'"]').focus();
+};
+async function start(){
+  const main=document.querySelector('main');main.inert=true;
+  try{
+    
+    await refresh();
+    if(reviewingTransfer) planning.open=true;
+    main.inert=false;
+  }catch(e){alert('Ошибка загрузки демоданных: '+e.message)}
+}
+start();
+</script></html>
